@@ -1,0 +1,9 @@
+{
+  "name": "dynan",
+  "version": "1.0.0",
+  "private": true,
+  "description": "WASM Dynamic Analysis Framework — in-container analysis script",
+  "dependencies": {
+    "playwright": "^1.49.0"
+  }
+}

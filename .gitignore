@@ -1,0 +1,33 @@
+virtualenv/
+.venv/
+venv/
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local env files
+.env
+.env.*
+
+# Frontend build/deps
+frontend/node_modules/
+frontend/dist/
+
+# Backend runtime artifacts
+backend/wise.db
+backend/uploads/
+backend/analysis_results/
+
+# Dynan runtime artifacts
+Modules/dynan/output/
+Modules/dynan/archives/
+
+# Temp/scratch files
+.tmp_py_files.txt
+*.tmp
+

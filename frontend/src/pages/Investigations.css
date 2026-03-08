@@ -1,0 +1,457 @@
+/* Investigations Page Styles */
+
+.investigations-content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.investigations-header {
+  margin-bottom: 2rem;
+}
+
+.investigations-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  background: var(--gradient-1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.5rem;
+}
+
+.investigations-subtitle {
+  color: var(--text-secondary);
+  font-size: 1rem;
+}
+
+/* Search Bar */
+.investigations-search {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  padding: 0.65rem 1rem;
+  margin-bottom: 1.5rem;
+  max-width: 350px;
+  transition: all 0.3s ease;
+}
+
+.investigations-search:focus-within {
+  border-color: var(--purple-primary);
+  box-shadow: 0 0 15px var(--purple-glow);
+}
+
+.investigations-search svg {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.investigations-search input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+}
+
+.investigations-search input::placeholder {
+  color: var(--text-muted);
+}
+
+/* Table Container */
+.investigations-table-container {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 
+    0 4px 40px rgba(0, 0, 0, 0.3),
+    0 0 60px rgba(155, 89, 255, 0.05);
+}
+
+/* Table Styles */
+.investigations-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.investigations-table thead {
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.investigations-table th {
+  padding: 1rem 1.25rem;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+}
+
+.investigations-table th.expand-col {
+  width: 50px;
+}
+
+.investigations-table td {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+/* Row Styles */
+.investigation-row {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.investigation-row:hover {
+  background: rgba(155, 89, 255, 0.05);
+}
+
+.investigation-row.expanded {
+  background: rgba(155, 89, 255, 0.08);
+}
+
+.investigation-row:last-child td {
+  border-bottom: none;
+}
+
+/* Expand Button */
+.expand-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.expand-btn:hover {
+  color: var(--purple-primary);
+  background: rgba(155, 89, 255, 0.1);
+}
+
+/* Cell Styles */
+.hash-cell code {
+  font-family: 'Fira Code', 'Monaco', monospace;
+  font-size: 0.85rem;
+  color: var(--purple-light);
+  background: rgba(155, 89, 255, 0.1);
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+}
+
+.name-cell {
+  color: var(--text-primary);
+}
+
+.name-cell svg {
+  color: var(--text-muted);
+  vertical-align: middle;
+  margin-right: 0.5rem;
+}
+
+.name-cell span {
+  vertical-align: middle;
+}
+
+/* Status Cell */
+.status-cell {
+  white-space: nowrap;
+}
+
+.status-cell .status-icon {
+  vertical-align: middle;
+  margin-right: 0.5rem;
+}
+
+.status-cell .status-text {
+  vertical-align: middle;
+}
+
+.status-icon {
+  flex-shrink: 0;
+}
+
+.status-icon.completed {
+  color: var(--success-color);
+}
+
+.status-icon.analyzing {
+  color: #f59e0b;
+  animation: pulse-status 1.5s ease-in-out infinite;
+}
+
+.status-icon.failed {
+  color: var(--error-color);
+}
+
+@keyframes pulse-status {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.status-text {
+  font-size: 0.9rem;
+}
+
+.status-text.completed {
+  color: var(--success-color);
+}
+
+.status-text.analyzing {
+  color: #f59e0b;
+}
+
+.status-text.failed {
+  color: var(--error-color);
+}
+
+/* Result Badges */
+.result-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.result-badge.malicious {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.result-badge.clean {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.result-badge.suspicious {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.result-badge.pending {
+  background: rgba(107, 107, 128, 0.15);
+  color: var(--text-muted);
+  border: 1px solid rgba(107, 107, 128, 0.3);
+}
+
+.result-badge.unknown {
+  background: rgba(107, 107, 128, 0.15);
+  color: var(--text-muted);
+  border: 1px solid rgba(107, 107, 128, 0.3);
+}
+
+/* Lost Cell */
+.lost-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: #f59e0b;
+  font-size: 0.85rem;
+}
+
+.available-badge {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+/* Expanded Row */
+.expanded-row td {
+  padding: 0;
+  background: var(--bg-tertiary);
+}
+
+.expanded-content {
+  padding: 1.5rem 2rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.expanded-section {
+  margin-bottom: 1.25rem;
+}
+
+.expanded-section h4 {
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.full-hash {
+  font-family: 'Fira Code', 'Monaco', monospace;
+  font-size: 0.85rem;
+  color: var(--purple-light);
+  background: rgba(155, 89, 255, 0.1);
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  display: block;
+  word-break: break-all;
+}
+
+.placeholder-text {
+  color: var(--text-muted);
+  font-style: italic;
+  font-size: 0.9rem;
+}
+
+.type-badge {
+  margin-left: 0.6rem;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  background: rgba(148, 163, 184, 0.15);
+  padding: 0.2rem 0.5rem;
+  border-radius: 999px;
+}
+
+.child-table {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.child-row {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.child-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+}
+
+.child-hash code {
+  font-family: 'Fira Code', 'Monaco', monospace;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.child-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+}
+
+.child-actions .action-btn {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.8rem;
+}
+
+/* Expanded Actions */
+.expanded-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.action-btn {
+  padding: 0.6rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.action-btn.primary {
+  background: var(--gradient-1);
+  border: none;
+  color: white;
+  box-shadow: 0 2px 10px rgba(155, 89, 255, 0.3);
+}
+
+.action-btn.primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(155, 89, 255, 0.4);
+}
+
+.action-btn.secondary {
+  background: transparent;
+  border: 1px solid var(--border-color);
+  color: var(--text-secondary);
+}
+
+.action-btn.secondary:hover {
+  border-color: var(--purple-primary);
+  color: var(--purple-primary);
+  background: rgba(155, 89, 255, 0.05);
+}
+
+/* Empty State */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 2rem;
+  color: var(--text-muted);
+}
+
+.empty-state svg {
+  margin-bottom: 1rem;
+  opacity: 0.5;
+}
+
+.empty-state h3 {
+  font-size: 1.25rem;
+  color: var(--text-secondary);
+  margin-bottom: 0.5rem;
+}
+
+.empty-state p {
+  font-size: 0.95rem;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .investigations-content {
+    padding: 1rem;
+  }
+
+  .investigations-table th,
+  .investigations-table td {
+    padding: 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .hash-cell code {
+    font-size: 0.75rem;
+  }
+
+  .expanded-actions {
+    flex-wrap: wrap;
+  }
+}
