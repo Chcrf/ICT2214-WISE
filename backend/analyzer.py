@@ -334,12 +334,10 @@ async def analyze_wasm_file(investigation_id, wasm_path):
                 investigation_id=investigation_id,
                 wasm_decompile=wasm_decompile,
                 analysis_summary=f"Analysis failed: Invalid or corrupted WASM file. Decompilation errors occurred.",
-                risk_level="Unknown",
                 functions=[],
                 imports=[],
                 exports=[],
-                memory_usage="Unknown",
-                suspicious=False
+                memory_usage="Unknown"
             )
 
             update_investigation_status(
@@ -357,12 +355,10 @@ async def analyze_wasm_file(investigation_id, wasm_path):
             investigation_id=investigation_id,
             wasm_decompile=wasm_decompile,
             analysis_summary=summary,
-            risk_level="Unknown",
             functions=[],
             imports=imports,
             exports=exports,
-            memory_usage="Unknown",
-            suspicious=False
+            memory_usage="Unknown"
         )
 
         print(f"[Analyzer] Step 2.5: Generating YARA rule")
@@ -433,7 +429,6 @@ async def analyze_wasm_file(investigation_id, wasm_path):
             }
 
         result = "completed"
-        risk_level = "Unknown"
 
         update_investigation_status(investigation_id, "completed", result)
 
@@ -443,8 +438,7 @@ async def analyze_wasm_file(investigation_id, wasm_path):
         return {
             "success": True,
             "investigation_id": investigation_id,
-            "result": result,
-            "risk_level": risk_level
+            "result": result
         }
 
     except Exception as e:
@@ -454,8 +448,7 @@ async def analyze_wasm_file(investigation_id, wasm_path):
 
         create_analysis_result(
             investigation_id=investigation_id,
-            analysis_summary=f"Analysis failed: {str(e)}",
-            risk_level="Unknown"
+            analysis_summary=f"Analysis failed: {str(e)}"
         )
 
         return {

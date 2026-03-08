@@ -56,6 +56,7 @@ sudo usermod -aG docker "$USER"
 ```bash
 git clone <your-repo-url>
 cd WISE
+chmod +x ./setup.sh
 ./setup.sh
 ```
 
@@ -83,6 +84,63 @@ Endpoints:
 ## Configuration
 WISE uses centralized configuration in `wise_config.py` with env var overrides.
 
+Update these first in `wise_config.py` (or via env vars):
+
+1. `CONFIG["decompiler"]["provider"]` / `WISE_PROVIDER`
+- Select your active LLM provider (`openai`, `anthropic`, `google`, `openrouter`, `ollama`).
+
+2. `CONFIG["decompiler"]["model"]` / `WISE_MODEL`
+- Set the actual model you want for decompilation quality/cost tradeoff.
+
+3. `CONFIG["decompiler"]["temperature"]` / `WISE_TEMPERATURE`
+- Keep low (`0.0` to `0.2`) for deterministic reverse-engineering output.
+
+4. `CONFIG["backend"]["host"]` + `CONFIG["backend"]["port"]`
+- Required when deploying off localhost or behind reverse proxies.
+
+5. `CONFIG["dynan"]["image_tag"]` + `CONFIG["analyzer"]["yaragen_image"]`
+- Must match locally built Docker image tags.
+
+6. Timeout and throughput knobs:
+- `WASM_DECOMPILE_TIMEOUT`, `YARAGEN_TIMEOUT`
+- `DYNAN_EXECUTION_TIMEOUT`, `DYNAN_ANALYSIS_TIMEOUT_MS`
+- `WISE_LLM_MAX_RETRIES`, `WISE_MAX_PROMPT_TOKENS`
+
+Recommended minimal env setup before first run:
+```bash
+export WISE_PROVIDER=openai
+export WISE_MODEL=gpt-4o-mini
+export OPENAI_API_KEY="sk-..."
+```
+
+Supported providers and what to set:
+
+1. `openai`
+- `WISE_PROVIDER=openai`
+- Required key: `OPENAI_API_KEY`
+- Example models: `gpt-4o-mini`, `gpt-4.1-mini`
+
+2. `anthropic`
+- `WISE_PROVIDER=anthropic`
+- Required key: `ANTHROPIC_API_KEY`
+- Example models: `claude-3-5-sonnet-latest`, `claude-3-7-sonnet-latest`
+
+3. `google`
+- `WISE_PROVIDER=google`
+- Required key: `GOOGLE_API_KEY`
+- Example models: `gemini-1.5-pro`, `gemini-1.5-flash`
+
+4. `openrouter`
+- `WISE_PROVIDER=openrouter`
+- Required key: `OPENROUTER_API_KEY`
+- Example models: `openai/gpt-4o-mini`, `anthropic/claude-3.5-sonnet`
+
+5. `ollama` (local)
+- `WISE_PROVIDER=ollama`
+- No API key required
+- Optional: `OLLAMA_BASE_URL` (default `http://localhost:11434`)
+- Example models: `qwen2.5-coder:7b`, `llama3.1:8b`
+
 Core runtime keys:
 ```bash
 export OPENAI_API_KEY="sk-..."
@@ -109,8 +167,8 @@ VITE_API_TIMEOUT=30000
 2. Submit a WASM file or URL from the UI.
 3. Worker processes queue and updates investigation status.
 4. Review outputs:
-- static analysis (`decompiled C`, `summary`, `function map`, `security findings`, `YARA`)
-- dynamic artifacts (`trace`, `network`, runtime artifacts)
+    - static analysis (`decompiled C`, `summary`, `function map`, `security findings`, `YARA`)
+    - dynamic artifacts (`trace`, `network`, runtime artifacts)
 5. Re-run investigation from the UI if needed.
 
 ## Architecture
@@ -137,7 +195,13 @@ Key points:
 ## Data Model
 Logical schema for `backend/wise.db` and per-investigation payload DBs.
 
-![Database Schema Diagram](./images/er_diagram.png)
+`wise.db` relationship view:
+
+![WISE DB ER Diagram](./images/er_diagram_wise.png)
+
+Per-investigation DB (`analysis_<id>.db`) view:
+
+![Per-Investigation DB ER Diagram](./images/er_diagram_idb.png)
 
 Key points:
 - `investigations` is the root table.

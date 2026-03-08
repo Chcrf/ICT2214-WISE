@@ -187,9 +187,7 @@ def init_database():
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 investigation_id INTEGER NOT NULL,
                 analysis_summary TEXT,
-                risk_level TEXT DEFAULT 'Unknown',
                 memory_usage TEXT,
-                suspicious INTEGER DEFAULT 0,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (investigation_id) REFERENCES investigations(id) ON DELETE CASCADE
             )
@@ -287,21 +285,19 @@ def init_database():
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     investigation_id INTEGER NOT NULL,
                     analysis_summary TEXT,
-                    risk_level TEXT DEFAULT 'Unknown',
                     memory_usage TEXT,
-                    suspicious INTEGER DEFAULT 0,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (investigation_id) REFERENCES investigations(id) ON DELETE CASCADE
                 )
             """)
             cursor.execute("""
                 INSERT INTO analysis_results_new (
-                    id, investigation_id, analysis_summary, risk_level,
-                    memory_usage, suspicious, created_at
+                    id, investigation_id, analysis_summary,
+                    memory_usage, created_at
                 )
                 SELECT
-                    id, investigation_id, analysis_summary, risk_level,
-                    memory_usage, suspicious, created_at
+                    id, investigation_id, analysis_summary,
+                    memory_usage, created_at
                 FROM analysis_results
             """)
             cursor.execute("DROP TABLE analysis_results")
@@ -310,6 +306,34 @@ def init_database():
 
         _migrate_drop_investigations_result_analysis_id()
         _migrate_drop_analysis_db_filename()
+
+        def _migrate_drop_analysis_results_risk_suspicious():
+            cursor.execute("PRAGMA table_info(analysis_results)")
+            cols = {row[1] for row in cursor.fetchall()}
+            if "risk_level" not in cols and "suspicious" not in cols:
+                return
+            cursor.execute("PRAGMA foreign_keys = OFF")
+            cursor.execute("""
+                CREATE TABLE analysis_results_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    investigation_id INTEGER NOT NULL,
+                    analysis_summary TEXT,
+                    memory_usage TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    FOREIGN KEY (investigation_id) REFERENCES investigations(id) ON DELETE CASCADE
+                )
+            """)
+            cursor.execute("""
+                INSERT INTO analysis_results_new (
+                    id, investigation_id, analysis_summary, memory_usage, created_at
+                )
+                SELECT
+                    id, investigation_id, analysis_summary, memory_usage, created_at
+                FROM analysis_results
+            """)
+            cursor.execute("DROP TABLE analysis_results")
+            cursor.execute("ALTER TABLE analysis_results_new RENAME TO analysis_results")
+            cursor.execute("PRAGMA foreign_keys = ON")
 
         def _fk_has_cascade(table, from_col, to_table):
             cursor.execute(f"PRAGMA foreign_key_list({table})")
@@ -383,21 +407,19 @@ def init_database():
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     investigation_id INTEGER NOT NULL,
                     analysis_summary TEXT,
-                    risk_level TEXT DEFAULT 'Unknown',
                     memory_usage TEXT,
-                    suspicious INTEGER DEFAULT 0,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     FOREIGN KEY (investigation_id) REFERENCES investigations(id) ON DELETE CASCADE
                 )
             """)
             cursor.execute("""
                 INSERT INTO analysis_results_new (
-                    id, investigation_id, analysis_summary, risk_level,
-                    memory_usage, suspicious, created_at
+                    id, investigation_id, analysis_summary,
+                    memory_usage, created_at
                 )
                 SELECT
-                    id, investigation_id, analysis_summary, risk_level,
-                    memory_usage, suspicious, created_at
+                    id, investigation_id, analysis_summary,
+                    memory_usage, created_at
                 FROM analysis_results
             """)
             cursor.execute("DROP TABLE analysis_results")
@@ -477,6 +499,7 @@ def init_database():
             cursor.execute("ALTER TABLE dynamic_results_new RENAME TO dynamic_results")
             cursor.execute("PRAGMA foreign_keys = ON")
 
+        _migrate_drop_analysis_results_risk_suspicious()
         _migrate_investigations_parent_fk_cascade()
         _migrate_analysis_results_fk_cascade()
         _migrate_processing_queue_fk_cascade()
@@ -699,12 +722,10 @@ def _ensure_analysis_db(analysis_db_path):
                 ai_decompile TEXT,
                 function_name_map_json TEXT,
                 analysis_summary TEXT,
-                risk_level TEXT DEFAULT 'Unknown',
                 functions_json TEXT,
                 imports_json TEXT,
                 exports_json TEXT,
                 memory_usage TEXT,
-                suspicious INTEGER DEFAULT 0,
                 security_findings_json TEXT,
                 yara_rule TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -732,6 +753,41 @@ def _ensure_analysis_db(analysis_db_path):
                 "ALTER TABLE analysis_results ADD COLUMN function_name_map_json TEXT")
         except Exception:
             pass
+
+        cursor.execute("PRAGMA table_info(analysis_results)")
+        cols = {row[1] for row in cursor.fetchall()}
+        if "risk_level" in cols or "suspicious" in cols:
+            cursor.execute("""
+                CREATE TABLE analysis_results_new (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    wasm_decompile TEXT,
+                    ai_decompile TEXT,
+                    function_name_map_json TEXT,
+                    analysis_summary TEXT,
+                    functions_json TEXT,
+                    imports_json TEXT,
+                    exports_json TEXT,
+                    memory_usage TEXT,
+                    security_findings_json TEXT,
+                    yara_rule TEXT,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            cursor.execute("""
+                INSERT INTO analysis_results_new (
+                    id, wasm_decompile, ai_decompile, function_name_map_json,
+                    analysis_summary, functions_json, imports_json, exports_json,
+                    memory_usage, security_findings_json, yara_rule, created_at, updated_at
+                )
+                SELECT
+                    id, wasm_decompile, ai_decompile, function_name_map_json,
+                    analysis_summary, functions_json, imports_json, exports_json,
+                    memory_usage, security_findings_json, yara_rule, created_at, updated_at
+                FROM analysis_results
+            """)
+            cursor.execute("DROP TABLE analysis_results")
+            cursor.execute("ALTER TABLE analysis_results_new RENAME TO analysis_results")
         conn.commit()
     finally:
         conn.close()
@@ -743,12 +799,10 @@ def _upsert_analysis_db(
     ai_decompile,
     function_name_map_json,
     analysis_summary,
-    risk_level,
     functions_json,
     imports_json,
     exports_json,
     memory_usage,
-    suspicious,
     security_findings_json=None,
     yara_rule=None,
 ):
@@ -765,12 +819,10 @@ def _upsert_analysis_db(
                     ai_decompile = COALESCE(?, ai_decompile),
                     function_name_map_json = COALESCE(?, function_name_map_json),
                     analysis_summary = COALESCE(?, analysis_summary),
-                    risk_level = COALESCE(?, risk_level),
                     functions_json = COALESCE(?, functions_json),
                     imports_json = COALESCE(?, imports_json),
                     exports_json = COALESCE(?, exports_json),
                     memory_usage = COALESCE(?, memory_usage),
-                    suspicious = COALESCE(?, suspicious),
                     security_findings_json = COALESCE(?, security_findings_json),
                     yara_rule = COALESCE(?, yara_rule),
                     updated_at = CURRENT_TIMESTAMP
@@ -780,12 +832,10 @@ def _upsert_analysis_db(
                 ai_decompile,
                 function_name_map_json,
                 analysis_summary,
-                risk_level,
                 functions_json,
                 imports_json,
                 exports_json,
                 memory_usage,
-                (1 if suspicious else 0) if suspicious is not None else None,
                 security_findings_json,
                 yara_rule,
                 row[0]
@@ -793,21 +843,19 @@ def _upsert_analysis_db(
         else:
             cursor.execute("""
                 INSERT INTO analysis_results
-                (wasm_decompile, ai_decompile, function_name_map_json, analysis_summary, risk_level,
-                 functions_json, imports_json, exports_json, memory_usage, suspicious,
+                (wasm_decompile, ai_decompile, function_name_map_json, analysis_summary,
+                 functions_json, imports_json, exports_json, memory_usage,
                  security_findings_json, yara_rule)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 wasm_decompile,
                 ai_decompile,
                 function_name_map_json,
                 analysis_summary,
-                risk_level or "Unknown",
                 functions_json,
                 imports_json,
                 exports_json,
                 memory_usage,
-                1 if suspicious else 0,
                 security_findings_json,
                 yara_rule
             ))
@@ -850,12 +898,10 @@ def create_analysis_result(
     ai_decompile=None,
     function_name_map=None,
     analysis_summary=None,
-    risk_level=None,
     functions=None,
     imports=None,
     exports=None,
     memory_usage=None,
-    suspicious=None,
     security_findings_json=None,
     yara_rule=None,
 ):
@@ -877,23 +923,16 @@ def create_analysis_result(
         )
         existing = cursor.fetchone()
 
-        suspicious_value = None if suspicious is None else (
-            1 if suspicious else 0)
-
         if existing:
 
             cursor.execute("""
                 UPDATE analysis_results SET
                     analysis_summary = COALESCE(?, analysis_summary),
-                    risk_level = COALESCE(?, risk_level),
-                    memory_usage = COALESCE(?, memory_usage),
-                    suspicious = COALESCE(?, suspicious)
+                    memory_usage = COALESCE(?, memory_usage)
                 WHERE investigation_id = ?
             """, (
                 analysis_summary,
-                risk_level,
                 memory_usage,
-                suspicious_value,
                 investigation_id
             ))
             analysis_id = existing["id"]
@@ -901,15 +940,12 @@ def create_analysis_result(
 
             cursor.execute("""
                 INSERT INTO analysis_results
-                (investigation_id, analysis_summary,
-                 risk_level, memory_usage, suspicious)
-                VALUES (?, ?, ?, ?, ?)
+                (investigation_id, analysis_summary, memory_usage)
+                VALUES (?, ?, ?)
             """, (
                 investigation_id,
                 analysis_summary,
-                risk_level or "Unknown",
-                memory_usage,
-                suspicious_value or 0
+                memory_usage
             ))
             analysis_id = cursor.lastrowid
 
@@ -927,12 +963,10 @@ def create_analysis_result(
         ai_decompile,
         function_name_map_json,
         analysis_summary,
-        risk_level,
         functions_json,
         imports_json,
         exports_json,
         memory_usage,
-        suspicious,
         security_findings_json=security_findings_json,
         yara_rule=yara_rule,
     )
@@ -950,8 +984,7 @@ def get_analysis_by_hash(sha256_hash):
                    i.md5_hash, i.sha1_hash, i.file_size, i.file_type, i.file_path,
                    i.hashes_json, i.strings_json,
                    i.investigation_type, i.parent_investigation_id, i.source,
-                   a.analysis_summary, a.risk_level as riskLevel,
-                   a.memory_usage as memoryUsage, a.suspicious
+                   a.analysis_summary, a.memory_usage as memoryUsage
             FROM investigations i
             LEFT JOIN analysis_results a ON i.id = a.investigation_id
             WHERE i.sha256_hash = ?
@@ -979,8 +1012,8 @@ def get_analysis_by_hash(sha256_hash):
             try:
                 cursor.execute("""
                     SELECT wasm_decompile, ai_decompile, function_name_map_json, analysis_summary,
-                           risk_level, functions_json, imports_json, exports_json,
-                           memory_usage, suspicious
+                           functions_json, imports_json, exports_json,
+                           memory_usage
                     FROM analysis_results
                     WHERE investigation_id = ?
                     ORDER BY id DESC
@@ -1001,9 +1034,7 @@ def get_analysis_by_hash(sha256_hash):
                 "imports_json": "[]",
                 "exports_json": "[]",
                 "analysis_summary": None,
-                "risk_level": None,
                 "memory_usage": None,
-                "suspicious": 0,
                 "security_findings_json": "[]",
                 "yara_rule": None
             }
@@ -1011,7 +1042,6 @@ def get_analysis_by_hash(sha256_hash):
         functions = json.loads(analysis_data.get("functions_json") or "[]")
         imports = json.loads(analysis_data.get("imports_json") or "[]")
         exports = json.loads(analysis_data.get("exports_json") or "[]")
-        suspicious = bool(analysis_data.get("suspicious"))
         security_findings = json.loads(
             analysis_data.get("security_findings_json") or "[]")
         function_map_json = analysis_data.get("function_name_map_json")
@@ -1026,7 +1056,6 @@ def get_analysis_by_hash(sha256_hash):
 
         summary = result.get("analysis_summary") or analysis_data.get(
             "analysis_summary")
-        risk_level = result.get("riskLevel") or analysis_data.get("risk_level")
         memory_usage = result.get(
             "memoryUsage") or analysis_data.get("memory_usage")
 
@@ -1088,12 +1117,10 @@ def get_analysis_by_hash(sha256_hash):
             "strings": strings,
             "analysis": {
                 "summary": summary or "Analysis pending...",
-                "riskLevel": risk_level or "Unknown",
                 "functions": functions,
                 "imports": imports,
                 "exports": exports,
                 "memoryUsage": memory_usage or "Unknown",
-                "suspicious": suspicious,
                 "yaraRule": analysis_data.get("yara_rule")
             },
             "parentId": parent_id,
@@ -1142,8 +1169,7 @@ def get_analysis_by_id(investigation_id):
                    i.md5_hash, i.sha1_hash, i.file_size, i.file_type, i.file_path,
                    i.hashes_json, i.strings_json,
                    i.investigation_type, i.parent_investigation_id, i.source,
-                   a.analysis_summary, a.risk_level as riskLevel,
-                   a.memory_usage as memoryUsage, a.suspicious
+                   a.analysis_summary, a.memory_usage as memoryUsage
             FROM investigations i
             LEFT JOIN analysis_results a ON i.id = a.investigation_id
             WHERE i.id = ?
@@ -1167,8 +1193,8 @@ def get_analysis_by_id(investigation_id):
             try:
                 cursor.execute("""
                     SELECT wasm_decompile, ai_decompile, function_name_map_json, analysis_summary,
-                           risk_level, functions_json, imports_json, exports_json,
-                           memory_usage, suspicious
+                           functions_json, imports_json, exports_json,
+                           memory_usage
                     FROM analysis_results
                     WHERE investigation_id = ?
                     ORDER BY id DESC
@@ -1189,9 +1215,7 @@ def get_analysis_by_id(investigation_id):
                 "imports_json": "[]",
                 "exports_json": "[]",
                 "analysis_summary": None,
-                "risk_level": None,
                 "memory_usage": None,
-                "suspicious": 0,
                 "security_findings_json": "[]",
                 "yara_rule": None
             }
@@ -1199,7 +1223,6 @@ def get_analysis_by_id(investigation_id):
         functions = json.loads(analysis_data.get("functions_json") or "[]")
         imports = json.loads(analysis_data.get("imports_json") or "[]")
         exports = json.loads(analysis_data.get("exports_json") or "[]")
-        suspicious = bool(analysis_data.get("suspicious"))
         security_findings = json.loads(
             analysis_data.get("security_findings_json") or "[]")
         function_map_json = analysis_data.get("function_name_map_json")
@@ -1214,7 +1237,6 @@ def get_analysis_by_id(investigation_id):
 
         summary = result.get("analysis_summary") or analysis_data.get(
             "analysis_summary")
-        risk_level = result.get("riskLevel") or analysis_data.get("risk_level")
         memory_usage = result.get(
             "memoryUsage") or analysis_data.get("memory_usage")
 
@@ -1276,12 +1298,10 @@ def get_analysis_by_id(investigation_id):
             "strings": strings,
             "analysis": {
                 "summary": summary or "Analysis pending...",
-                "riskLevel": risk_level or "Unknown",
                 "functions": functions,
                 "imports": imports,
                 "exports": exports,
                 "memoryUsage": memory_usage or "Unknown",
-                "suspicious": suspicious,
                 "yaraRule": analysis_data.get("yara_rule")
             }
         }
@@ -1577,8 +1597,8 @@ def get_analysis_by_investigation_id(investigation_id):
             try:
                 cursor.execute("""
                     SELECT wasm_decompile, ai_decompile, function_name_map_json, analysis_summary,
-                           risk_level, functions_json, imports_json, exports_json,
-                           memory_usage, suspicious, security_findings_json
+                           functions_json, imports_json, exports_json,
+                           memory_usage, security_findings_json
                     FROM analysis_results
                     WHERE investigation_id = ?
                     ORDER BY id DESC
@@ -1599,9 +1619,7 @@ def get_analysis_by_investigation_id(investigation_id):
             "imports_json": "[]",
             "exports_json": "[]",
             "analysis_summary": None,
-            "risk_level": None,
             "memory_usage": None,
-            "suspicious": 0,
             "security_findings_json": "[]",
             "yara_rule": None
         }
@@ -1609,7 +1627,6 @@ def get_analysis_by_investigation_id(investigation_id):
     functions = json.loads(analysis_data.get("functions_json") or "[]")
     imports = json.loads(analysis_data.get("imports_json") or "[]")
     exports = json.loads(analysis_data.get("exports_json") or "[]")
-    suspicious = bool(analysis_data.get("suspicious"))
     security_findings = json.loads(
         analysis_data.get("security_findings_json") or "[]")
     function_map_json = analysis_data.get("function_name_map_json")
@@ -1628,12 +1645,10 @@ def get_analysis_by_investigation_id(investigation_id):
         "securityFindings": security_findings,
         "analysis": {
             "summary": analysis_data.get("analysis_summary") or "Analysis pending...",
-            "riskLevel": analysis_data.get("risk_level") or "Unknown",
             "functions": functions,
             "imports": imports,
             "exports": exports,
             "memoryUsage": analysis_data.get("memory_usage") or "Unknown",
-            "suspicious": suspicious,
             "yaraRule": analysis_data.get("yara_rule")
         }
     }
